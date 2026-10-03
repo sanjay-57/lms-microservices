@@ -1,0 +1,24 @@
+# Maven / Java
+target/
+*.class
+*.log
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+# Node
+node_modules/
+dist/
+# Env / secrets
+.env
+# OS
+.DS_Store
+Thumbs.db
+# Generated certificates (certificate-service, later phase)
+certificates-output/
+# Runtime (start-all scripts)
+logs/
+.pids/

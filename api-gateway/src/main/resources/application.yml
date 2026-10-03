@@ -1,0 +1,138 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+            allowedMethods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+            allowedHeaders: "*"
+            maxAge: 3600
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin, RETAIN_UNIQUE
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: user-service
+                fallbackUri: forward:/fallback/user-service
+        - id: course-service
+          uri: lb://course-service
+          predicates:
+            - Path=/api/courses/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: course-service
+                fallbackUri: forward:/fallback/course-service
+        - id: enrollment-service
+          uri: lb://enrollment-service
+          predicates:
+            - Path=/api/enrollments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: enrollment-service
+                fallbackUri: forward:/fallback/enrollment-service
+        - id: content-service-modules
+          uri: lb://content-service
+          predicates:
+            - Path=/api/modules/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: content-service
+                fallbackUri: forward:/fallback/content-service
+        - id: content-service-lessons
+          uri: lb://content-service
+          predicates:
+            - Path=/api/lessons/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: content-service
+                fallbackUri: forward:/fallback/content-service
+        - id: assessment-service
+          uri: lb://assessment-service
+          predicates:
+            - Path=/api/assessments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: assessment-service
+                fallbackUri: forward:/fallback/assessment-service
+        - id: progress-service
+          uri: lb://progress-service
+          predicates:
+            - Path=/api/progress/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: progress-service
+                fallbackUri: forward:/fallback/progress-service
+        - id: certificate-service
+          uri: lb://certificate-service
+          predicates:
+            - Path=/api/certificates/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: certificate-service
+                fallbackUri: forward:/fallback/certificate-service
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: notification-service
+                fallbackUri: forward:/fallback/notification-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: ${JWT_SECRET:change-this-lms-dev-secret-key-min-32-chars-long}
+
+# Circuit breaker per downstream service: after 50% failures in the last 10 calls the circuit opens for 15 s
+# and the gateway answers immediately with a 503 JSON fallback instead of waiting on a dead service.
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 15s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,circuitbreakers
+  health:
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    com.lms: INFO
